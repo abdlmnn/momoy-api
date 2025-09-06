@@ -64,7 +64,7 @@ OR
 
 ## Requirements
 
-- Crate a file **requirements.txt**
+- Crate a file **requirements.txt** and copy and paste it
 
 ```php
 django
