@@ -1,6 +1,6 @@
 # 🐾 Momoy Pet Supplies – DJANGO REST Framework
 
-This repository contains the python DJango, REST API for **Momoy Pet Supplies**.
+This repository contains the python DJANGO REST API for **Momoy Pet Supplies**.
 
 ---
 
