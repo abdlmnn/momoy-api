@@ -96,4 +96,121 @@ psycopg2-binary
 
 ---
 
-## Project
+## Project & App
+
+1. Create a project
+
+```bash
+  django-admin startproject name_project
+```
+
+- Optional if you want your project folder will be as the root
+
+```bash
+  django-admin startproject name_project .
+```
+
+- Folder structure
+
+```bash
+  rootFolder/
+  ├── name_project/ # This is your project
+  │   ├── _init_.py
+  │   ├── asgi.py
+  │   ├── settings.py
+  │   ├── urls.py
+  │   ├── wsgi.py
+  ├── manage.py
+  ├── Pipfile
+  ├── README.md
+  └── requirements.txt
+```
+
+2. Create a app
+
+```bash
+  py manage.py startapp name_app
+```
+
+- Folder structure
+
+```bash
+  rootFolder/
+  ├── name_app/ # This is your app
+  ├── name_project/
+  │   ├── _init_.py
+  │   ├── asgi.py
+  │   ├── settings.py
+  │   ├── urls.py
+  │   ├── wsgi.py
+  ├── manage.py
+  ├── Pipfile
+  ├── README.md
+  └── requirements.txt
+```
+
+3. Config your Settings.py
+
+- Open name_project -> settings.py
+
+Take Note: Everytime you create App always add your app in settings.py
+
+```py
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    # Add REST Framework, CORS, Social login
+    "rest_framework",
+    "corsheaders",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "social_django",
+
+    # Here add you app
+    "name_app",
+
+]
+```
+
+```py
+  MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+
+    "corsheaders.middleware.CorsMiddleware", # Add this and must be above CommonMiddleware
+
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    "allauth.account.middleware.AccountMiddleware", # Add the allauth here
+
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+  ]
+
+  CORS_ALLOW_ALL_ORIGINS = True # Add this for CORS (Expo communiting for DJANGO)
+```
+
+Copy and Paste this for REST_FRAMEWORK
+
+```py
+  REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        # later: add JWT authentication here
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+  }
+```
