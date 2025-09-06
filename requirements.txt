@@ -1,0 +1,13 @@
+django
+djangorestframework
+django-allauth
+environs
+pillow
+python-dotenv
+requests
+cryptography
+social-auth-app-django
+pipenv
+django-cors-headers
+python-decouple
+psycopg2-binary
