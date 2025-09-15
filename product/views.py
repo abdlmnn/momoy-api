@@ -30,18 +30,21 @@ class TypeView(APIView):
         serializer.save()
         return Response(
             {"message": f"{serializer.data['name']} created successfully"},
-            status=201
+            status=200
         )
     return Response(serializer.errors, status=400)
+  
+  def put(self, request, format=None):
+    return Response({"message": "Put is working"}, status=200)
   
 class ProductView(APIView):
   
   def get(self, request, format=None):
 
-   return Response("Hi")
+   return Response("This is Product")
   
 class InventoryView(APIView):
   
   def get(self, request, format=None):
 
-    return Response("Hi")
+    return Response("This is Inventory")

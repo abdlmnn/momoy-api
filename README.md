@@ -214,3 +214,5 @@ Copy and Paste this for REST_FRAMEWORK
     "PAGE_SIZE": 10,
   }
 ```
+
+## pip install google-auth google-auth-oauthlib
