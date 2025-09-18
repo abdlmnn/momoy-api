@@ -8,6 +8,21 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.urls import reverse
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+
+from .serializers import EmailSignupSerializer
+
+from django.contrib.auth import authenticate
+
+from rest_framework.permissions import IsAuthenticated
+
+
 class TestView(APIView):
   def get(self, request, format=None):
     print("API was called")
@@ -69,3 +84,168 @@ class GoogleLoginView(APIView):
 
         except ValueError as e:
             return Response({"error": "Invalid token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    permission_classes = []  
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        if not email or not password:
+            return Response(
+                {"error": "Email and password required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = authenticate(request, username=email, password=password)
+
+        if user is None:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not user.is_active:
+            return Response(
+                {"error": "Email not verified"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Issue JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        return Response({
+            "message": "Login successful",
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "refresh": str(refresh),
+            "access": str(access),
+        }, status=status.HTTP_200_OK)
+
+class EmailSignupView(APIView):
+    permission_classes = []  # allow unauthenticated POST
+
+    def post(self, request):
+        serializer = EmailSignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+
+        # Check if user already exists
+        if User.objects.filter(email=email).exists():
+            return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create inactive user
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            is_active=False
+        )
+
+        # Generate verification token
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        # Build verification URL
+        current_site = get_current_site(request)
+        verification_link = f"http://{current_site.domain}/auth/verify-email/{uid}/{token}/"
+
+        # Send email
+        send_mail(
+            subject="Verify your email",
+            message=f"Click this link to verify your account: {verification_link}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,  # will raise error if SMTP fails
+        )
+
+        return Response({"message": "Check your email to verify your account"}, status=status.HTTP_201_CREATED)
+
+class VerifyEmailView(APIView):
+    permission_classes = []
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_bytes(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+
+            refresh = RefreshToken.for_user(user)
+            access = str(refresh.access_token)
+            refresh_token = str(refresh)
+
+            return Response({"message": "Email verified successfully", "access": access,
+                "refresh": refresh_token,
+                "email": user.email,}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CheckVerificationView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        email = request.query_params.get("email")
+        if not email:
+            return Response({"error": "Email required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = {
+            "email": user.email,
+            "is_verified": user.is_active,
+        }
+
+        if user.is_active:
+            refresh = RefreshToken.for_user(user)
+            data["access"] = str(refresh.access_token)
+            data["refresh"] = str(refresh)
+
+        return Response({"data": data}, status=status.HTTP_200_OK)
+
+class CreateAccountView(APIView):
+    permission_classes = [IsAuthenticated]  # [IsAuthenticated] Require JWT (user already logged in after email verification)
+
+    def post(self, request):
+        first_name = request.data.get("first_name", "").strip()
+        last_name = request.data.get("last_name", "").strip()
+        phone = request.data.get("phone", "").strip()
+
+        # Validate
+        if not first_name or not last_name or not phone:
+            return Response({"error": "First name, last name, and phone are required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not phone.isdigit() or len(phone) != 10:
+            return Response({"error": "Phone must be exactly 10 digits"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(phone=phone).exclude(id=request.user.id).exists():
+            return Response({"error": "Phone already in use"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Update user
+        user = request.user
+        user.first_name = first_name
+        user.last_name = last_name
+        user.phone = phone
+        user.save()
+
+        return Response({
+            "message": "Congrats nalang!!!",
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "email": user.email,
+        }, status=status.HTTP_200_OK)
