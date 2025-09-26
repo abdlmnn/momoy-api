@@ -22,6 +22,10 @@ from django.contrib.auth import authenticate
 
 from rest_framework.permissions import IsAuthenticated
 
+import secrets
+from django.conf import settings
+from .models import PendingEmailVerification
+
 
 class TestView(APIView):
   def get(self, request, format=None):
@@ -63,11 +67,25 @@ class GoogleLoginView(APIView):
             first_name = name_parts[0] if len(name_parts) > 0 else ""
             last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
 
-            user, created = User.objects.get_or_create(
-                username=email,
-                defaults={"email": email, "first_name": first_name,
-                    "last_name": last_name,}
-            )
+            # user, created = User.objects.get_or_create(
+            #     username=email,
+            #     defaults={"email": email, "first_name": first_name,
+            #         "last_name": last_name,}
+            # )
+
+            user, created = None, False
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                # Create new user if not found
+                user = User.objects.create(
+                    username=email,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_active=True  
+                )
+                created = True
 
             refresh = RefreshToken.for_user(user)
             access = refresh.access_token
@@ -80,6 +98,7 @@ class GoogleLoginView(APIView):
                 "google_id": google_id,
                 "refresh": str(refresh),
                 "access": str(access),
+                "is_new_user": created,
             }, status=status.HTTP_200_OK)
 
         except ValueError as e:
@@ -135,23 +154,39 @@ class EmailSignupView(APIView):
         email = serializer.validated_data['email']
 
         # Check if user already exists
-        if User.objects.filter(email=email).exists():
-            return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        # if User.objects.filter(email=email).exists():
+        #     return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Create inactive user
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            is_active=False
-        )
+        # user = User.objects.create_user(
+        #     username=email,
+        #     email=email,
+        #     is_active=False
+        # )
 
         # Generate verification token
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        # token = default_token_generator.make_token(user)
+        # uid = urlsafe_base64_encode(force_bytes(user.pk))
 
         # Build verification URL
-        current_site = get_current_site(request)
-        verification_link = f"http://{current_site.domain}/auth/verify-email/{uid}/{token}/"
+        # current_site = get_current_site(request)
+        # verification_link = f"http://{current_site.domain}/auth/verify-email/{uid}/{token}/"
+
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"error": "Email already registered"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if PendingEmailVerification.objects.filter(email=email).exists():
+            return Response({"error": "Email already pending verification"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token = secrets.token_urlsafe(32)
+
+        PendingEmailVerification.objects.create(email=email, token=token)
+
+        verification_link = f"http://{request.get_host()}/auth/verify-email/?token={token}"
+
 
         # Send email
         send_mail(
@@ -166,27 +201,58 @@ class EmailSignupView(APIView):
 
 class VerifyEmailView(APIView):
     permission_classes = []
+    
+    def get(self, request):
+        token = request.query_params.get("token")
 
-    def get(self, request, uidb64, token):
+        if not token:
+            return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            uid = force_bytes(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if default_token_generator.check_token(user, token):
-            user.is_active = True
-            user.save()
-
-            refresh = RefreshToken.for_user(user)
-            access = str(refresh.access_token)
-            refresh_token = str(refresh)
-
-            return Response({"message": "Email verified successfully", "access": access,
-                "refresh": refresh_token,
-                "email": user.email,}, status=status.HTTP_200_OK)
-        else:
+            pending = PendingEmailVerification.objects.get(token=token)
+        except PendingEmailVerification.DoesNotExist:
             return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(email=pending.email).exists():
+            return Response({"error": "Email already verified"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.create_user(
+            username=pending.email,
+            email=pending.email,
+            is_active=True
+        )
+
+        pending.delete()
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "message": "Email verified successfully",
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "email": user.email,
+        }, status=status.HTTP_200_OK)
+    
+    # def get(self, request, uidb64, token):
+        # try:
+        #     uid = force_bytes(urlsafe_base64_decode(uidb64))
+        #     user = User.objects.get(pk=uid)
+        # except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        #     return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if default_token_generator.check_token(user, token):
+        #     user.is_active = True
+        #     user.save()
+
+        #     refresh = RefreshToken.for_user(user)
+        #     access = str(refresh.access_token)
+        #     refresh_token = str(refresh)
+
+        #     return Response({"message": "Email verified successfully", "access": access,
+        #         "refresh": refresh_token,
+        #         "email": user.email,}, status=status.HTTP_200_OK)
+        # else:
+        #     return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CheckVerificationView(APIView):
@@ -194,13 +260,14 @@ class CheckVerificationView(APIView):
 
     def get(self, request):
         email = request.query_params.get("email")
+
         if not email:
             return Response({"error": "Email required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "This email has not been verified yet"}, status=status.HTTP_404_NOT_FOUND)
 
         data = {
             "email": user.email,
@@ -221,6 +288,7 @@ class CreateAccountView(APIView):
         first_name = request.data.get("first_name", "").strip()
         last_name = request.data.get("last_name", "").strip()
         phone = request.data.get("phone", "").strip()
+        password = request.data.get("password", "").strip()
 
         # Validate
         if not first_name or not last_name or not phone:
@@ -240,6 +308,13 @@ class CreateAccountView(APIView):
         user.first_name = first_name
         user.last_name = last_name
         user.phone = phone
+
+        if password:
+            if len(password) < 8:
+                return Response({"error": "Password must be at least 8 characters"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(password)
+
         user.save()
 
         return Response({
@@ -248,4 +323,5 @@ class CreateAccountView(APIView):
             "last_name": user.last_name,
             "phone": user.phone,
             "email": user.email,
+            "password": bool(password),
         }, status=status.HTTP_200_OK)

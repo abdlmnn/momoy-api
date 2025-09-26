@@ -17,3 +17,9 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
         (None, {'fields': ('phone',)}),
     )
+
+@admin.register(PendingEmailVerification)
+class PendingEmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ("email", "token", "created_at")
+    search_fields = ("email",)
+    ordering = ("-created_at",)
