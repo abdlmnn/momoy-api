@@ -16,13 +16,24 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include("userAPI.urls")),
 
-    path('api/', include("product.urls")),
-]
+    path('api/categories/', include("categoryAPI.urls")),
+    path('api/products/', include("productAPI.urls")),
+    path('api/inventory/', include("inventoryAPI.urls")),
+    path('api/chats/', include("chatsAPI.urls")),
+    path('api/notifications/', include("notificationAPI.urls")),
+    path('api/cart/', include("cartAPI.urls")),
+    path('api/wishlist/', include("wishlistAPI.urls")),
+    path('api/orders/', include("orderAPI.urls")),
+    path('api/orderlines/', include("orderlineAPI.urls")),
+    path('api/payments/', include("paymentAPI.urls")),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # localhost:8000
 # localhost:8000/admin
