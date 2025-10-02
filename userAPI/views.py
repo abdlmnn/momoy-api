@@ -16,7 +16,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
-from .serializers import EmailSignupSerializer
+from .serializers import *
 
 from django.contrib.auth import authenticate
 
@@ -24,7 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 
 import secrets
 from django.conf import settings
-from .models import PendingEmailVerification
+from .models import *
 
 
 class TestView(APIView):
@@ -118,21 +118,41 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = authenticate(request, username=email, password=password)
+        # user = authenticate(request, username=email, password=password)
 
-        if user is None:
+        user = User.objects.filter(email=email).first()
+
+        if not user:
             return Response(
-                {"error": "Invalid credentials"},
-                status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Email not found"},
+                status=status.HTTP_404_NOT_FOUND
             )
+
+        if user and not user.has_usable_password():
+            return Response(
+                {"error": "This account does not have a password"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # if user is None:
+        #     return Response(
+        #         {"error": "Invalid credentials"},
+        #         status=status.HTTP_401_UNAUTHORIZED
+        #     )
 
         if not user.is_active:
             return Response(
                 {"error": "Email not verified"},
                 status=status.HTTP_403_FORBIDDEN
             )
+        
+        if not user.check_password(password):
+            return Response(
+                {"error": "Incorrect password"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
-        # Issue JWT tokens
+        # Password is correct → issue JWT tokens
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
@@ -325,3 +345,54 @@ class CreateAccountView(APIView):
             "email": user.email,
             "password": bool(password),
         }, status=status.HTTP_200_OK)
+    
+
+class UserAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        addresses = UserAddress.objects.filter(user=request.user)
+        serializer = UserAddressSerializer(addresses, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = UserAddressSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if not UserAddress.objects.filter(user=request.user).exists():
+            serializer.validated_data['is_default'] = True
+
+        if serializer.validated_data.get('is_default', False):
+            UserAddress.objects.filter(user=request.user, is_default=True).update(is_default=False)
+
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+
+class UserAddressDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        try:
+            address = UserAddress.objects.get(pk=pk, user=request.user)
+        except UserAddress.DoesNotExist:
+            return Response({"error": "Address not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserAddressSerializer(address, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        # If updating to default, clear others
+        if serializer.validated_data.get('is_default', False):
+            UserAddress.objects.filter(user=request.user, is_default=True).update(is_default=False)
+
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        try:
+            address = UserAddress.objects.get(pk=pk, user=request.user)
+        except UserAddress.DoesNotExist:
+            return Response({"error": "Address not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        address.delete()
+        return Response({"message": "Address deleted"}, status=status.HTTP_204_NO_CONTENT)
