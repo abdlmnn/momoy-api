@@ -32,7 +32,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-default-secret-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.getenv("momoy-api.onrender.com", "127.0.0.1,localhost").split(",")
+# ALLOWED_HOSTS = os.getenv("momoy-api.onrender.com", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = ["momoy-api.onrender.com", "127.0.0.1", "localhost"]
 
 
 # Application definition
