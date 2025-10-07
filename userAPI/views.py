@@ -28,6 +28,8 @@ from .models import *
 
 from django.core.mail import EmailMultiAlternatives
 
+from django.shortcuts import render
+
 
 class TestView(APIView):
   def get(self, request, format=None):
@@ -251,6 +253,7 @@ class EmailSignupView(APIView):
         email_obj.send(fail_silently=False)
 
         return Response({"message": "Check your email to verify your account"}, status=status.HTTP_201_CREATED)
+        
 
 class VerifyEmailView(APIView):
     permission_classes = []
@@ -259,14 +262,20 @@ class VerifyEmailView(APIView):
         token = request.query_params.get("token")
 
         if not token:
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "email_verification_failed.html")
             return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             pending = PendingEmailVerification.objects.get(token=token)
         except PendingEmailVerification.DoesNotExist:
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "email_verification_failed.html")
             return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(email=pending.email).exists():
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "email_verification_failed.html")
             return Response({"error": "Email already verified"}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(
@@ -276,6 +285,9 @@ class VerifyEmailView(APIView):
         )
 
         pending.delete()
+
+        if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+            return render(request, "email_verification_success.html")
 
         refresh = RefreshToken.for_user(user)
 
