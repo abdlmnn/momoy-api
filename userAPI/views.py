@@ -248,7 +248,7 @@ class EmailSignupView(APIView):
             to=[email],
         )
         email_obj.attach_alternative(html_message, "text/html")
-        email_obj.send()
+        email_obj.send(fail_silently=False)
 
         return Response({"message": "Check your email to verify your account"}, status=status.HTTP_201_CREATED)
 

@@ -18,3 +18,4 @@ google-auth-oauthlib
 google-auth-httplib2
 gunicorn
 whitenoise
+django-sendgrid-v5
