@@ -202,7 +202,7 @@ class EmailSignupView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        PendingEmailVerification.objects.filter(created_at__lt=timezone.now() - timedelta(hours=1)).delete()
+        # PendingEmailVerification.objects.filter(created_at__lt=timezone.now() - timedelta(hours=1)).delete()
         
         if PendingEmailVerification.objects.filter(email=email).exists():
             return Response({"error": "Email already pending verification"}, status=status.HTTP_400_BAD_REQUEST)
@@ -221,7 +221,7 @@ class EmailSignupView(APIView):
             <h2>Welcome to Momoy's App!</h2>
             <p>Hi there,</p>
             <p>Please verify your email address by clicking the button below:</p>
-            <p>
+            <p style="text-align:center;">
               <a href="{verification_link}" 
                  style="display:inline-block;background-color:#FAAF5E;color:#fff;
                         padding:10px 16px;text-decoration:none;border-radius:6px;">
