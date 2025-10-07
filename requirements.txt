@@ -10,6 +10,7 @@ social-auth-app-django
 pipenv
 django-cors-headers
 python-decouple
+psycopg2
 psycopg2-binary
 djangorestframework-simplejwt
 google-auth
