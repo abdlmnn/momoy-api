@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from datetime import timedelta
 import uuid
 
 class UserAddress(models.Model):
@@ -26,7 +27,10 @@ class CustomUser(AbstractUser):
 class PendingEmailVerification(models.Model):
     email = models.EmailField(unique=True)
     token = models.CharField(max_length=255, unique=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(hours=1)
 
     def __str__(self):
         return self.email

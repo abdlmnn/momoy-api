@@ -26,6 +26,8 @@ import secrets
 from django.conf import settings
 from .models import *
 
+from django.core.mail import EmailMultiAlternatives
+
 
 class TestView(APIView):
   def get(self, request, format=None):
@@ -197,6 +199,8 @@ class EmailSignupView(APIView):
                 {"error": "Email already registered"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        PendingEmailVerification.objects.filter(created_at__lt=timezone.now() - timedelta(hours=1)).delete()
         
         if PendingEmailVerification.objects.filter(email=email).exists():
             return Response({"error": "Email already pending verification"}, status=status.HTTP_400_BAD_REQUEST)
@@ -206,16 +210,45 @@ class EmailSignupView(APIView):
         PendingEmailVerification.objects.create(email=email, token=token)
 
         verification_link = f"http://{request.get_host()}/auth/verify-email/?token={token}"
-
+        
+        subject = "Verify your email"
+        text_message = f"Click the link to verify your account: {verification_link}"
+        html_message = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif;">
+            <h2>Welcome to Momoy's App!</h2>
+            <p>Hi there,</p>
+            <p>Please verify your email address by clicking the button below:</p>
+            <p>
+              <a href="{verification_link}" 
+                 style="display:inline-block;background-color:#FAAF5E;color:#fff;
+                        padding:10px 16px;text-decoration:none;border-radius:6px;">
+                Verify Email
+              </a>
+            </p>
+            <p>If you didn’t request this, you can safely ignore this email.</p>
+            <p>— The Momoy App Team</p>
+          </body>
+        </html>
+        """
 
         # Send email
-        send_mail(
-            subject="Verify your email",
-            message=f"Click this link to verify your account: {verification_link}",
+        # send_mail(
+        #     subject="Verify your email",
+        #     message=f"Click this link to verify your account: {verification_link}",
+        #     from_email=settings.DEFAULT_FROM_EMAIL,
+        #     recipient_list=[email],
+        #     fail_silently=False,  # will raise error if SMTP fails
+        # )
+
+        email_obj = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,  # will raise error if SMTP fails
+            to=[email],
         )
+        email_obj.attach_alternative(html_message, "text/html")
+        email_obj.send()
 
         return Response({"message": "Check your email to verify your account"}, status=status.HTTP_201_CREATED)
 
