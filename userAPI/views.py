@@ -30,6 +30,8 @@ from django.core.mail import EmailMultiAlternatives
 
 from django.shortcuts import render
 
+import datetime
+
 
 class TestView(APIView):
   def get(self, request, format=None):
@@ -456,10 +458,8 @@ class SendLoginLinkView(APIView):
         except User.DoesNotExist:
             return Response({"error": "No account found with this email"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Clean up old pending links
-        PendingLoginLink.objects.filter(created_at__lt=timezone.now() - datetime.timedelta(hours=1)).delete()
+        PendingLoginLink.objects.filter(created_at__lt=timezone.now() - datetime.timedelta(minutes=1)).delete()
 
-        # Generate new token
         token = secrets.token_urlsafe(32)
         PendingLoginLink.objects.create(email=email, token=token)
 
@@ -470,7 +470,7 @@ class SendLoginLinkView(APIView):
         html_message = f"""
         <html>
           <body style="font-family: Arial, sans-serif;">
-            <h2>Welcome back!</h2>
+            <h2>Welcome back to Momoy's App!</h2>
             <p>Click the button below to log in to your account:</p>
             <p style="text-align:center;">
               <a href="{login_link}" 
@@ -479,22 +479,33 @@ class SendLoginLinkView(APIView):
                 Log in to Momoy
               </a>
             </p>
-            <p>This link expires in 1 hour.</p>
+            <p>This link expires in 1 minute.</p>
+            <p>— The Momoy App Team</p>
           </body>
         </html>
         """
+        try:
+            email_obj = EmailMultiAlternatives(
+                subject=subject,
+                body=text_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email],
+            )
+            email_obj.attach_alternative(html_message, "text/html")
+            email_obj.send(fail_silently=False)
 
-        email_obj = EmailMultiAlternatives(
-            subject=subject,
-            body=text_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[email],
-        )
-        email_obj.attach_alternative(html_message, "text/html")
-        email_obj.send(fail_silently=False)
+            return Response({
+                "message": "Login link sent! Check your email.",
+                "expires_in": 60, 
+                "expires_text": "1 minute"
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            print("Error sending login link:", e)
 
-        return Response({"message": "Login link sent! Check your email."}, status=status.HTTP_200_OK)
-
+            return Response(
+                {"error": "Failed to send email", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class VerifyLoginLinkView(APIView):
     permission_classes = []
@@ -514,7 +525,7 @@ class VerifyLoginLinkView(APIView):
                 return render(request, "login_link_failed.html")
             return Response({"error": "Invalid or expired link"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if timezone.now() - pending.created_at > datetime.timedelta(hours=1):
+        if timezone.now() - pending.created_at > datetime.timedelta(minutes=1):
             pending.delete()
             if "text/html" in request.META.get("HTTP_ACCEPT", ""):
                 return render(request, "login_link_failed.html")
