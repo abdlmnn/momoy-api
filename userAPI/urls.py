@@ -24,4 +24,6 @@ urlpatterns = [
 
     path("send-login-link/", SendLoginLinkView.as_view(), name="send-login-link"),
     path("verify-login-link/", VerifyLoginLinkView.as_view(), name="verify-login-link"),
+
+    path("check-verification-status/", CheckVerificationStatus.as_view(), name="check-verification-status"),
 ]

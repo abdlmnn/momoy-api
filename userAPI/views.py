@@ -539,6 +539,14 @@ class VerifyLoginLinkView(APIView):
                 return render(request, "login_link_failed.html")
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        LoginVerification.objects.update_or_create(
+            email=user.email,
+            defaults={"is_verified": True}
+        )
+
+        user.is_active = True
+        user.save()
+
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
@@ -553,3 +561,29 @@ class VerifyLoginLinkView(APIView):
             "refresh": str(refresh),
             "email": user.email,
         }, status=status.HTTP_200_OK)
+
+class CheckVerificationStatus(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        email = request.query_params.get("email")
+        if not email:
+            return Response({"error": "Email is required"}, status=400)
+
+        record = LoginVerification.objects.filter(email=email).first()
+
+        if record and record.is_verified:
+            user = User.objects.get(email=email)
+            refresh = RefreshToken.for_user(user)
+            access = refresh.access_token
+
+            record.delete()
+
+            return Response({
+                "verified": True,
+                "access": str(access),
+                "refresh": str(refresh),
+                "email": user.email
+            })
+
+        return Response({"verified": False})

@@ -38,3 +38,8 @@ class PendingLoginLink(models.Model):
 
     def __str__(self):
         return self.email
+
+class LoginVerification(models.Model):
+    email = models.EmailField(unique=True)
+    is_verified = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
