@@ -463,9 +463,9 @@ class SendLoginLinkView(APIView):
         token = secrets.token_urlsafe(32)
         PendingLoginLink.objects.create(email=email, token=token)
 
-        login_link = f"http://{request.get_host()}/auth/login-link/?token={token}"
+        login_link = f"http://{request.get_host()}/auth/verify-login-link/?token={token}"
 
-        subject = "Your Magic Login Link"
+        subject = "You Have Received a Login Link"
         text_message = f"Click to log in instantly: {login_link}"
         html_message = f"""
         <html>
