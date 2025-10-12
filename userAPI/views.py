@@ -441,3 +441,104 @@ class UserAddressDetailView(APIView):
 
         address.delete()
         return Response({"message": "Address deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class SendLoginLinkView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email, is_active=True)
+        except User.DoesNotExist:
+            return Response({"error": "No account found with this email"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Clean up old pending links
+        PendingLoginLink.objects.filter(created_at__lt=timezone.now() - datetime.timedelta(hours=1)).delete()
+
+        # Generate new token
+        token = secrets.token_urlsafe(32)
+        PendingLoginLink.objects.create(email=email, token=token)
+
+        login_link = f"http://{request.get_host()}/auth/login-link/?token={token}"
+
+        subject = "Your Magic Login Link"
+        text_message = f"Click to log in instantly: {login_link}"
+        html_message = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif;">
+            <h2>Welcome back!</h2>
+            <p>Click the button below to log in to your account:</p>
+            <p style="text-align:center;">
+              <a href="{login_link}" 
+                 style="display:inline-block;background-color:#FAAF5E;color:#fff;
+                        padding:10px 16px;text-decoration:none;border-radius:6px;">
+                Log in to Momoy
+              </a>
+            </p>
+            <p>This link expires in 1 hour.</p>
+          </body>
+        </html>
+        """
+
+        email_obj = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+        )
+        email_obj.attach_alternative(html_message, "text/html")
+        email_obj.send(fail_silently=False)
+
+        return Response({"message": "Login link sent! Check your email."}, status=status.HTTP_200_OK)
+
+
+class VerifyLoginLinkView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        token = request.query_params.get("token")
+
+        if not token:
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "login_link_failed.html")
+            return Response({"error": "Missing token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            pending = PendingLoginLink.objects.get(token=token)
+        except PendingLoginLink.DoesNotExist:
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "login_link_failed.html")
+            return Response({"error": "Invalid or expired link"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if timezone.now() - pending.created_at > datetime.timedelta(hours=1):
+            pending.delete()
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "login_link_failed.html")
+            return Response({"error": "This link has expired"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=pending.email)
+        except User.DoesNotExist:
+            pending.delete()
+            if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+                return render(request, "login_link_failed.html")
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        pending.delete() 
+
+        if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+            return render(request, "login_link_success.html")
+
+        return Response({
+            "message": "Login successful",
+            "access": str(access),
+            "refresh": str(refresh),
+            "email": user.email,
+        }, status=status.HTTP_200_OK)

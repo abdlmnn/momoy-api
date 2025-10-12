@@ -21,4 +21,7 @@ urlpatterns = [
 
     path('addresses/', UserAddressView.as_view(), name='user-addresses'),
     path("addresses/<int:pk>/", UserAddressDetailView.as_view(), name="user-address-detail"),
+
+    path("send-login-link/", SendLoginLinkView.as_view(), name="send-login-link"),
+    path("verify-login-link/", VerifyLoginLinkView.as_view(), name="verify-login-link"),
 ]
