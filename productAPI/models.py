@@ -15,7 +15,6 @@ class Product(models.Model):
     category = models.ForeignKey('categoryAPI.Category', on_delete=models.SET_NULL, null=True, related_name="products")
     product_type = models.CharField(max_length=20, choices=PRODUCT_TYPE_CHOICES, blank=True, null=True)
     brand = models.CharField(max_length=255, blank=True, null=True)
-    is_new = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
