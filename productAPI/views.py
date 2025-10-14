@@ -8,7 +8,7 @@ from .serializers import ProductSerializer
 
 class ProductView(APIView):
     def get(self, request):
-        products = Product.objects.all()
+        products = Product.objects.all().order_by('-created_at')
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
 
@@ -37,41 +37,59 @@ class ProductDetailView(APIView):
         product = get_object_or_404(Product, pk=pk)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+        
 class ProductSearchView(APIView):
     def get(self, request):
         queryset = Product.objects.all()
 
-        # Search by name or description
+        # 🔍 1. Search by name or brand
         search = request.query_params.get('search', '')
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
-                Q(description__icontains=search)
+                Q(brand__icontains=search)
             )
 
-        # Filter by category
+        # 🏷️ 2. Filter by category name
         category = request.query_params.get('category', '')
         if category:
             queryset = queryset.filter(category__name__icontains=category)
 
-        # Filter by category ID
+        # 🆔 3. Filter by category ID
         category_id = request.query_params.get('category_id', '')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
 
-        # Filter by is_new
+        # 🆕 4. Filter by "is_new" flag (from Inventory)
         is_new = request.query_params.get('is_new', '')
         if is_new.lower() in ['true', '1', 'yes']:
-            queryset = queryset.filter(is_new=True)
+            queryset = queryset.filter(variants__is_new=True)
         elif is_new.lower() in ['false', '0', 'no']:
-            queryset = queryset.filter(is_new=False)
+            queryset = queryset.filter(variants__is_new=False)
 
-        # Order by (default: newest first)
+        # 💰 5. Filter by price range (from Inventory)
+        min_price = request.query_params.get('min_price', '')
+        max_price = request.query_params.get('max_price', '')
+
+        if min_price and max_price:
+            queryset = queryset.filter(
+                variants__price__gte=min_price,
+                variants__price__lte=max_price
+            )
+        elif min_price:
+            queryset = queryset.filter(variants__price__gte=min_price)
+        elif max_price:
+            queryset = queryset.filter(variants__price__lte=max_price)
+
+        # ✨ Remove duplicates (a product can have multiple variants in range)
+        queryset = queryset.distinct()
+
+        # 🧭 6. Order by (default: newest first)
         order_by = request.query_params.get('order_by', '-created_at')
         if order_by in ['name', '-name', 'created_at', '-created_at', 'category__name']:
             queryset = queryset.order_by(order_by)
 
+        # 🧾 7. Serialize and respond
         serializer = ProductSerializer(queryset, many=True)
         return Response({
             'count': queryset.count(),
