@@ -12,7 +12,7 @@ class Product(models.Model):
         ('merch', 'Merch'),
     ]
     name = models.CharField(max_length=200)
-    category = models.ForeignKey('categoryAPI.Category', on_delete=models.SET_NULL, null=True, related_name="products")
+    category = models.ForeignKey('categoryAPI.Category', on_delete=models.PROTECT, null=False, blank=False, related_name="products")
     product_type = models.CharField(max_length=20, choices=PRODUCT_TYPE_CHOICES, blank=True, null=True)
     brand = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
