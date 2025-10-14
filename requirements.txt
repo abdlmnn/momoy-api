@@ -21,3 +21,4 @@ whitenoise
 django-sendgrid-v5
 dj-database-url
 config
+django-cloudinary-storage
