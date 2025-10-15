@@ -3,10 +3,48 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.db import transaction
 from .models import Cart, CartLine
 from .serializers import CartSerializer, CartLineSerializer
-from inventoryAPI.models import Inventory
+from django.db import transaction
+
+# class CartView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         cart_items = Cart.objects.filter(user=request.user)
+#         serializer = CartSerializer(cart_items, many=True)
+#         return Response(serializer.data)
+
+#     def post(self, request):
+#         serializer = CartSerializer(data=request.data)
+#         if serializer.is_valid():
+#             # Check if item already in cart
+#             existing = Cart.objects.filter(user=request.user, inventory=serializer.validated_data['inventory']).first()
+#             if existing:
+#                 existing.quantity += serializer.validated_data['quantity']
+#                 existing.save()
+#                 serializer = CartSerializer(existing)
+#                 return Response(serializer.data)
+#             else:
+#                 serializer.save(user=request.user)
+#                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class CartDetailView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def put(self, request, pk):
+#         cart_item = get_object_or_404(Cart, pk=pk, user=request.user)
+#         serializer = CartSerializer(cart_item, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, pk):
+#         cart_item = get_object_or_404(Cart, pk=pk, user=request.user)
+#         cart_item.delete()
+#         return Response({"message": "Removed from cart"}, status=status.HTTP_204_NO_CONTENT)
 
 
 class CartView(APIView):
@@ -23,117 +61,55 @@ class CartView(APIView):
         """
         Add an inventory item to the user's active cart.
         If the item already exists, increase its quantity.
-        Updates inventory stock & availability.
         """
-        cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
+        cart, _ = Cart.objects.get_or_create(user=request.user, is_active=True)
         serializer = CartLineSerializer(data=request.data)
 
-        if serializer.is_valid():
-            inventory = serializer.validated_data['inventory']
-            quantity = serializer.validated_data.get('quantity', 1)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check available stock
-            if inventory.stock < quantity:
-                return Response(
-                    {"error": f"Not enough stock. Available: {inventory.stock}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        inventory = serializer.validated_data['inventory']
+        quantity = serializer.validated_data.get('quantity', 1)
 
-            existing_line = CartLine.objects.filter(cart=cart, inventory=inventory).first()
-            if existing_line:
-                additional_qty = quantity
-                if inventory.stock < additional_qty:
-                    return Response(
-                        {"error": f"Not enough stock to add more. Available: {inventory.stock}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                existing_line.quantity += additional_qty
-                existing_line.save()
-
-                # Reduce stock
-                inventory.stock -= additional_qty
-            else:
-                # Create new line and reduce stock
-                CartLine.objects.create(cart=cart, inventory=inventory, quantity=quantity)
-                inventory.stock -= quantity
-
-            # Update availability
-            if inventory.stock <= 0:
-                inventory.stock = 0
-                inventory.is_available = False
-            else:
-                inventory.is_available = True
-
-            inventory.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        existing_line = CartLine.objects.filter(cart=cart, inventory=inventory).first()
+        if existing_line:
+            existing_line.quantity += quantity
+            existing_line.save()
+            return Response(CartLineSerializer(existing_line).data, status=status.HTTP_200_OK)
+        else:
+            cart_line = CartLine.objects.create(cart=cart, inventory=inventory, quantity=quantity)
+            return Response(CartLineSerializer(cart_line).data, status=status.HTTP_201_CREATED)
 
 
 class CartDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @transaction.atomic
-def put(self, request, pk):
-    """
-    Update a specific cart line (e.g., change quantity)
-    Adjusts inventory stock & availability accordingly.
-    """
-    cart_line = get_object_or_404(CartLine, pk=pk, cart__user=request.user, cart__is_active=True)
-    old_quantity = cart_line.quantity
-    serializer = CartLineSerializer(cart_line, data=request.data, partial=True)
-
-    if serializer.is_valid():
-        new_quantity = serializer.validated_data.get('quantity', old_quantity)
-        inventory = cart_line.inventory
-        difference = new_quantity - old_quantity
-
-        # If increasing quantity
-        if difference > 0:
-            if inventory.stock < difference:
-                return Response(
-                    {"error": f"Not enough stock to increase quantity. Available: {inventory.stock}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            inventory.stock -= difference
-        elif difference < 0:
-            # Return stock if quantity decreases
-            inventory.stock += abs(difference)
-
-        # Update availability
-        if inventory.stock <= 0:
-            inventory.stock = 0
-            inventory.is_available = False
-        else:
-            inventory.is_available = True
-
-        inventory.save()
-        serializer.save()
-
-        # Update the quantity in the CartLine model
-        cart_line.quantity = new_quantity
-        cart_line.save()
-
-        return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @transaction.atomic
-    def delete(self, request, pk):
+    def put(self, request, pk):
         """
-        Remove a specific cart line from the user's cart.
-        Returns stock to inventory & updates availability.
+        Update a specific cart line (e.g., change quantity)
         """
         cart_line = get_object_or_404(CartLine, pk=pk, cart__user=request.user, cart__is_active=True)
-        inventory = cart_line.inventory
+        serializer = CartLineSerializer(cart_line, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Return stock
-        inventory.stock += cart_line.quantity
-
-        # Update availability
-        if inventory.stock > 0:
-            inventory.is_available = True
-
-        inventory.save()
+    def delete(self, request, pk):
+        """
+        Remove a specific cart line from the user's cart
+        """
+        cart_line = get_object_or_404(CartLine, pk=pk, cart__user=request.user, cart__is_active=True)
         cart_line.delete()
-
         return Response({"message": "Removed from cart"}, status=status.HTTP_204_NO_CONTENT)
+
+class ClearCartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        cart = Cart.objects.filter(user=request.user, is_active=True).first()
+        if not cart:
+            return Response({"message": "No active cart found"}, status=status.HTTP_404_NOT_FOUND)
+
+        cart.lines.all().delete()
+        return Response({"message": "Cart cleared"}, status=status.HTTP_204_NO_CONTENT)
