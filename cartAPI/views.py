@@ -74,44 +74,48 @@ class CartDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     @transaction.atomic
-    def put(self, request, pk):
-        """
-        Update a specific cart line (e.g., change quantity)
-        Adjusts inventory stock & availability accordingly.
-        """
-        cart_line = get_object_or_404(CartLine, pk=pk, cart__user=request.user, cart__is_active=True)
-        old_quantity = cart_line.quantity
-        serializer = CartLineSerializer(cart_line, data=request.data, partial=True)
+def put(self, request, pk):
+    """
+    Update a specific cart line (e.g., change quantity)
+    Adjusts inventory stock & availability accordingly.
+    """
+    cart_line = get_object_or_404(CartLine, pk=pk, cart__user=request.user, cart__is_active=True)
+    old_quantity = cart_line.quantity
+    serializer = CartLineSerializer(cart_line, data=request.data, partial=True)
 
-        if serializer.is_valid():
-            new_quantity = serializer.validated_data.get('quantity', old_quantity)
-            inventory = cart_line.inventory
-            difference = new_quantity - old_quantity
+    if serializer.is_valid():
+        new_quantity = serializer.validated_data.get('quantity', old_quantity)
+        inventory = cart_line.inventory
+        difference = new_quantity - old_quantity
 
-            # If increasing quantity
-            if difference > 0:
-                if inventory.stock < difference:
-                    return Response(
-                        {"error": f"Not enough stock to increase quantity. Available: {inventory.stock}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                inventory.stock -= difference
-            elif difference < 0:
-                # Return stock if quantity decreases
-                inventory.stock += abs(difference)
+        # If increasing quantity
+        if difference > 0:
+            if inventory.stock < difference:
+                return Response(
+                    {"error": f"Not enough stock to increase quantity. Available: {inventory.stock}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            inventory.stock -= difference
+        elif difference < 0:
+            # Return stock if quantity decreases
+            inventory.stock += abs(difference)
 
-            # Update availability
-            if inventory.stock <= 0:
-                inventory.stock = 0
-                inventory.is_available = False
-            else:
-                inventory.is_available = True
+        # Update availability
+        if inventory.stock <= 0:
+            inventory.stock = 0
+            inventory.is_available = False
+        else:
+            inventory.is_available = True
 
-            inventory.save()
-            serializer.save()
+        inventory.save()
+        serializer.save()
 
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Update the quantity in the CartLine model
+        cart_line.quantity = new_quantity
+        cart_line.save()
+
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @transaction.atomic
     def delete(self, request, pk):
