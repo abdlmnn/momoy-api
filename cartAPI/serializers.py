@@ -5,12 +5,17 @@ class CartLineSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='inventory.product.name', read_only=True)
     size = serializers.CharField(source='inventory.size', read_only=True)
     price = serializers.DecimalField(source='inventory.price', max_digits=10, decimal_places=2, read_only=True)
-    image = serializers.CharField(source='inventory.image', read_only=True)
+    image = serializers.SerializerMethodField()
     is_new = serializers.BooleanField(source='inventory.is_new', read_only=True)
 
     class Meta:
         model = CartLine
         fields = ['id', 'inventory', 'product_name', 'size', 'price', 'quantity', 'image', 'is_new']
+
+    def get_image(self, obj):
+        if obj.inventory.image:
+            return obj.inventory.image.url  # Cloudinary automatically returns full URL
+        return None
 
 class CartSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source='user.email', read_only=True)
