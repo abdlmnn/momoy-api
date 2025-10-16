@@ -13,8 +13,13 @@ class OrderView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        orders = Order.objects.filter(user=request.user).order_by('-created_at')
-        serializer = OrderSerializer(orders, many=True)
+        orders = (
+            Order.objects.filter(user=request.user)
+            .select_related('payment')  # <-- ensures payment is included
+            .prefetch_related('orderlines__inventory')  # fetch orderlines + inventory
+            .order_by('-created_at')
+        )
+        serializer = OrderSerializer(orders, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
@@ -62,6 +67,10 @@ class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        order = get_object_or_404(Order, pk=pk, user=request.user)
-        serializer = OrderSerializer(order)
+        order = get_object_or_404(
+            Order.objects.select_related('payment').prefetch_related('orderlines__inventory'),
+            pk=pk,
+            user=request.user
+        )
+        serializer = OrderSerializer(order, context={'request': request})
         return Response(serializer.data)

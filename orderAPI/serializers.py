@@ -6,7 +6,7 @@ from paymentAPI.serializers import PaymentSerializer
 class OrderSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source='user.email', read_only=True)
     orderlines = serializers.SerializerMethodField()
-    payment = serializers.SerializerMethodField()
+    payment = PaymentSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -16,7 +16,7 @@ class OrderSerializer(serializers.ModelSerializer):
         orderlines = obj.orderlines.all()
         return OrderlineSerializer(orderlines, many=True, context=self.context).data
 
-    def get_payment(self, obj):
-        if hasattr(obj, 'payment'):
-            return PaymentSerializer(obj.payment, context=self.context).data
-        return None
+    # def get_payment(self, obj):
+    #     if hasattr(obj, 'payment'):
+    #         return PaymentSerializer(obj.payment, context=self.context).data
+    #     return None
