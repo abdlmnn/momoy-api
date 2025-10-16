@@ -20,19 +20,6 @@ class PaymentView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        # serializer = PaymentSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     order = serializer.validated_data['order']
-        #     if order.user != request.user:
-        #         return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-        #     serializer.save(amount=order.total_amount)
-        #     return Response({
-        #         "message": "Payment recorded successfully",
-        #         "payment": serializer.data
-        #     }, status=status.HTTP_201_CREATED)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         """Create a payment (COD or GCash) for an order"""
         order_id = request.data.get('order')
         method = request.data.get('method')

@@ -1,15 +1,17 @@
 from rest_framework import serializers
 from .models import Order
+from orderlineAPI.serializers import OrderlineSerializer
+from paymentAPI.serializers import PaymentSerializer
 
 class OrderSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source='user.email', read_only=True)
     orderlines = serializers.SerializerMethodField()
+    payment = PaymentSerializer(read_only=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'user_email', 'total_amount', 'status', 'created_at', 'updated_at', 'orderlines']
+        fields = ['id', 'user', 'user_email', 'total_amount', 'status', 'created_at', 'updated_at', 'orderlines', 'payment']
 
     def get_orderlines(self, obj):
-        from orderlineAPI.serializers import OrderlineSerializer
         orderlines = obj.orderlines.all()
         return OrderlineSerializer(orderlines, many=True).data

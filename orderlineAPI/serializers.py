@@ -1,10 +1,15 @@
 from rest_framework import serializers
 from .models import Orderline
+from inventoryAPI.serializers import InventorySerializer
 
 class OrderlineSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='inventory.product.name', read_only=True)
-    size = serializers.CharField(source='inventory.size', read_only=True)
+    inventory = InventorySerializer(read_only=True)
 
     class Meta:
         model = Orderline
-        fields = ['id', 'inventory', 'product_name', 'size', 'quantity', 'price']
+        fields = ['id', 'inventory', 'quantity', 'price']
+    
+    def get_image(self, obj):
+        if obj.inventory.image:
+            return f"https://momoy-api.onrender.com{obj.inventory.image.url}"
+        return None
