@@ -9,13 +9,12 @@ class Payment(models.Model):
         ('pending', 'Pending'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
-        ('refunded', 'Refunded'),
+        ('delivery', 'Delivery'),
     ]
     order = models.OneToOneField('orderAPI.Order', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    transaction_id = models.CharField(max_length=100, blank=True, null=True)
     proof_image = models.ImageField(upload_to='payments/', blank=True, null=True)  # For GCash proof of payment
     created_at = models.DateTimeField(auto_now_add=True)
 

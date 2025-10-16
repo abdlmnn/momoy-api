@@ -5,6 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .models import Order
 from .serializers import OrderSerializer
+from cartAPI.models import Cart, CartLine
+from orderlineAPI.models import Orderline
+from django.db import transaction
 
 class OrderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -15,33 +18,44 @@ class OrderView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        # Create order from cart
-        from cartAPI.models import Cart
-        from orderlineAPI.models import Orderline
+        with transaction.atomic():
+            # Get user's active cart
+            cart = Cart.objects.filter(user=request.user, is_active=True).first()
+            if not cart or not cart.lines.exists():
+                return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
 
-        cart_items = Cart.objects.filter(user=request.user)
-        if not cart_items:
-            return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
+            # Calculate total
+            total_amount = sum(line.inventory.price * line.quantity for line in cart.lines.all())
 
-        total_amount = sum(item.inventory.price * item.quantity for item in cart_items)
+            # Create order
+            order = Order.objects.create(user=request.user, total_amount=total_amount)
 
-        order = Order.objects.create(user=request.user, total_amount=total_amount)
+            # Move cart lines → order lines
+            for line in cart.lines.all():
+                Orderline.objects.create(
+                    order=order,
+                    inventory=line.inventory,
+                    quantity=line.quantity,
+                    price=line.inventory.price
+                )
 
-        for item in cart_items:
-            Orderline.objects.create(
-                order=order,
-                inventory=item.inventory,
-                quantity=item.quantity,
-                price=item.inventory.price
-            )
-            # Reduce stock
-            item.inventory.stock -= item.quantity
-            item.inventory.save()
+                # Update inventory stock
+                line.inventory.stock -= line.quantity
+                if line.inventory.stock < 0:
+                    transaction.set_rollback(True)
+                    return Response({"error": f"Insufficient stock for {line.inventory.product.name}"}, status=status.HTTP_400_BAD_REQUEST)
+                line.inventory.save()
 
-        cart_items.delete()  # Clear cart
+            # Clear cart
+            cart.lines.all().delete()
+            cart.is_active = False
+            cart.save()
 
-        serializer = OrderSerializer(order)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            serializer = OrderSerializer(order)
+            return Response({
+                "message": "Order placed successfully",
+                "order": serializer.data
+            }, status=status.HTTP_201_CREATED)
 
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]

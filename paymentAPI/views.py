@@ -16,10 +16,14 @@ class PaymentView(APIView):
     def post(self, request):
         serializer = PaymentSerializer(data=request.data)
         if serializer.is_valid():
-            # Ensure order belongs to user
             order = serializer.validated_data['order']
             if order.user != request.user:
                 return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            serializer.save(amount=order.total_amount)
+            return Response({
+                "message": "Payment recorded successfully",
+                "payment": serializer.data
+            }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
