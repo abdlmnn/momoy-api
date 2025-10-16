@@ -124,7 +124,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # }
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv("DB_URL"))
+    'default': {**dj_database_url.config(default=os.getenv("DB_URL")), 'ATOMIC_REQUESTS': True,}
 }
 
 
