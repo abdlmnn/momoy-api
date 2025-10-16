@@ -38,7 +38,7 @@ class PaymentView(APIView):
                 order=order,
                 amount=order.total_amount,
                 method=method,
-                status='pending' if method == 'gcash' else 'completed',
+                status='completed' if method == 'gcash' else 'pending',
                 proof_image=proof_image if method == 'gcash' else None
             )
 
