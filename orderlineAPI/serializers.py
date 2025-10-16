@@ -8,8 +8,3 @@ class OrderlineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Orderline
         fields = ['id', 'inventory', 'quantity', 'price']
-    
-    def get_image(self, obj):
-        if obj.inventory.image:
-            return f"https://momoy-api.onrender.com{obj.inventory.image.url}"
-        return None
