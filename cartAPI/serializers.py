@@ -9,11 +9,14 @@ class CartLineSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     is_new = serializers.BooleanField(source='inventory.is_new', read_only=True)
 
-    inventory = InventorySerializer(read_only=True)
+    inventory = serializers.PrimaryKeyRelatedField(
+        queryset=Inventory.objects.all()
+    )
+    inventory_detail = InventorySerializer(source='inventory', read_only=True)
 
     class Meta:
         model = CartLine
-        fields = ['id', 'inventory', 'product_name', 'size', 'price', 'quantity', 'image', 'is_new']
+        fields = ['id', 'inventory','inventory_detail', 'product_name', 'size', 'price', 'quantity', 'image', 'is_new']
 
     def get_image(self, obj):
         if obj.inventory.image:
