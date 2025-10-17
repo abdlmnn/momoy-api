@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Cart, CartLine
+from inventoryAPI.serializers import InventorySerializer
 
 class CartLineSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='inventory.product.name', read_only=True)
@@ -7,6 +8,8 @@ class CartLineSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(source='inventory.price', max_digits=10, decimal_places=2, read_only=True)
     image = serializers.SerializerMethodField()
     is_new = serializers.BooleanField(source='inventory.is_new', read_only=True)
+
+    inventory = InventorySerializer(read_only=True)
 
     class Meta:
         model = CartLine
