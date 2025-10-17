@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Cart, CartLine
 from inventoryAPI.serializers import InventorySerializer
+from inventoryAPI.models import Inventory
 
 class CartLineSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='inventory.product.name', read_only=True)
