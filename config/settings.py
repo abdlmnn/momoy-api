@@ -184,13 +184,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Let Whitenoise serve compressed static files
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Media files (Uploaded images) - Using Cloudinary in production
-if DEBUG:
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media'
-else:
-    # In production, Cloudinary handles media files
-    pass
+# Media files (Uploaded images)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -243,5 +239,5 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
 }
 
-# This tells Django to use local file storage
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# Use local file storage for now (change to Cloudinary later if needed)
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
