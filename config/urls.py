@@ -35,8 +35,8 @@ urlpatterns = [
     path('api/payments/', include("paymentAPI.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # localhost:8000
 # localhost:8000/admin
