@@ -19,6 +19,9 @@ class InventorySerializer(serializers.ModelSerializer):
     #     return None
 
     def get_image(self, obj):
-        if obj.inventory.image:
-            return f"https://momoy-api.onrender.com{obj.inventory.image.url}"
+        if obj.image:
+            # Return full Cloudinary URL since images are stored in Cloudinary
+            from cloudinary_storage.storage import MediaCloudinaryStorage
+            storage = MediaCloudinaryStorage()
+            return storage.url(str(obj.image))
         return None
