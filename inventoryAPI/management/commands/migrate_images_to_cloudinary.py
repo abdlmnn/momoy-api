@@ -37,6 +37,15 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(
                         f'File not found for {inventory.id}: {local_path}'
                     ))
+            elif inventory.image_url and not inventory.image:
+                # If there's an image_url but no image, set it to the CloudinaryField
+                inventory.image = inventory.image_url
+                inventory.image_url = None
+                inventory.save()
+                self.stdout.write(self.style.SUCCESS(
+                    f'Migrated existing URL for {inventory.id} -> {inventory.image}'
+                ))
+                success_count += 1
             else:
                 self.stdout.write(f'Skipping {inventory.id}, already has valid URL.')
 

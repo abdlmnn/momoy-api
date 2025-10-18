@@ -13,8 +13,8 @@ for inv in Inventory.objects.all():
         inv.image_url = inv.image.url
         inv.image = None  # clear the old image field
         inv.save()
-        print(f"✅ Inventory {inv.id} moved URL -> image_url")
+        print(f"Inventory {inv.id} moved URL -> image_url")
     else:
-        print(f"ℹ️ Inventory {inv.id} has no Cloudinary URL or already migrated")
+        print(f"Inventory {inv.id} has no Cloudinary URL or already migrated")
 
-print("✅ Migration finished!")
+print("Migration finished!")

@@ -6,8 +6,8 @@ class Inventory(models.Model):
     size = models.CharField(max_length=50)  # "1KG", "20KG (SACK)"
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
-    image = models.ImageField(upload_to="products/variants/", max_length=500, blank=True, null=True)
-    image_url = models.URLField(blank=True, null=True)  
+    image = CloudinaryField('image', folder='products/variants/', blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)
     is_new = models.BooleanField(default=False)
     is_available = models.BooleanField(default=True)
 
@@ -18,14 +18,11 @@ class Inventory(models.Model):
     def display_image(self):
         """
         Returns a full URL for the image:
-        1. Prefer uploaded image
+        1. Prefer Cloudinary image
         2. Fall back to old Cloudinary URL
         """
         if self.image:
-            try:
-                return self.image.url
-            except ValueError:
-                return self.image_url  # fallback in case storage is misconfigured
+            return self.image.url
         return self.image_url
 
     # @property
