@@ -14,7 +14,10 @@ class InventorySerializer(serializers.ModelSerializer):
         fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'is_new','is_available']
 
     def get_image(self, obj):
-        return obj.image.url if obj.image else None
+        if obj.image:
+            # Cloudinary URLs are already full URLs
+            return obj.image.url
+        return None
 
     # def get_image(self, obj):
     #     if obj.image:
