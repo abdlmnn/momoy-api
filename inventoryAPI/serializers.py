@@ -14,6 +14,8 @@ class InventorySerializer(serializers.ModelSerializer):
     
     def get_image(self, obj):
         if obj.image:
-            # Return relative URL for React Native to prepend base URL
-            return obj.image.url
+            # Return full Cloudinary URL since images are stored in Cloudinary
+            from cloudinary_storage.storage import MediaCloudinaryStorage
+            storage = MediaCloudinaryStorage()
+            return storage.url(str(obj.image))
         return None
