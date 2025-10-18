@@ -83,7 +83,6 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware", # must be above CommonMiddleware
-    'config.middleware.DisableCSRFMiddlewareForAPI',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -103,6 +102,9 @@ if not DEBUG:
 
 
 ROOT_URLCONF = 'config.urls'
+
+# Remove admin login requirement for API endpoints
+LOGIN_URL = None
 
 TEMPLATES = [
     {
@@ -211,9 +213,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
 }
 
 SIMPLE_JWT = {
