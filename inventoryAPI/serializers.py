@@ -14,6 +14,8 @@ class InventorySerializer(serializers.ModelSerializer):
     
     def get_image(self, obj):
         if obj.image:
-            # Use Cloudinary URL directly
-            return obj.image.url
+            # Force Cloudinary URL generation
+            from cloudinary_storage.storage import MediaCloudinaryStorage
+            storage = MediaCloudinaryStorage()
+            return storage.url(str(obj.image))
         return None
