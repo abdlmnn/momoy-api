@@ -33,10 +33,7 @@ urlpatterns = [
     path('api/orders/', include("orderAPI.urls")),
     path('api/orderlines/', include("orderlineAPI.urls")),
     path('api/payments/', include("paymentAPI.urls")),
-]
-
-# Serve media files in development and production
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # localhost:8000
 # localhost:8000/admin
