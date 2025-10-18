@@ -11,7 +11,7 @@ class InventorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Inventory
-        fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'is_new','is_available']
+        fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew','is_available']
 
     def get_image(self, obj):
         return obj.display_image
