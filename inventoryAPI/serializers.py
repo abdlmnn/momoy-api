@@ -19,6 +19,6 @@ class InventorySerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         if obj.image:
-            # Return relative URL for local file storage
-            return obj.image.url
+            # For Cloudinary public_id format
+            return f"https://res.cloudinary.com/dlk1dzj2o/image/upload/{obj.image}.png"
         return None

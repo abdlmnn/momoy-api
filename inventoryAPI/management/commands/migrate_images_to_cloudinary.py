@@ -20,8 +20,8 @@ class Command(BaseCommand):
                         public_id=f"{inventory.product.name}_{inventory.size}".replace(" ", "_").replace("-", "_")
                     )
 
-                    # Update the image field with Cloudinary URL
-                    inventory.image = result['public_id'] + '.' + result['format']
+                    # Update the image field with Cloudinary public_id (without extension)
+                    inventory.image = result['public_id']
                     inventory.save()
 
                     self.stdout.write(
