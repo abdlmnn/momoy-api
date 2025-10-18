@@ -19,13 +19,7 @@ class InventorySerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         if obj.image:
-            # Check if using Cloudinary (production)
-            if hasattr(obj.image, 'url') and 'cloudinary' in str(obj.image.url):
-                return obj.image.url
-            # Local development
-            elif hasattr(obj.image, 'url'):
-                return f"https://momoy-api.onrender.com{obj.image.url}"
-            # Fallback for Cloudinary public_id format
-            else:
-                return f"https://res.cloudinary.com/dlk1dzj2o/image/upload/{obj.image}"
+            # Always return the full URL from the image field
+            # Cloudinary will handle production URLs automatically
+            return obj.image.url
         return None
