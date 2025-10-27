@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import UserAddress, UserProfile
+from orderAPI.models import Order
+from orderAPI.serializers import OrderSerializer
 
 User = get_user_model()
 
@@ -47,3 +49,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
         # Update profile instance
         return super().update(instance, validated_data)
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'is_active', 'is_superuser', 'date_joined']
+
+class AdminOrderSerializer(OrderSerializer):
+    class Meta:
+        model = Order
+        fields = ['id', 'user_email', 'total_amount', 'status', 'created_at', 'updated_at', 'orderlines', 'payment']

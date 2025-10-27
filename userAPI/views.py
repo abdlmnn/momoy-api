@@ -18,6 +18,7 @@ from django.core.mail import send_mail
 
 from .serializers import *
 from .models import UserProfile
+from orderAPI.models import Order
 
 from django.contrib.auth import authenticate
 
@@ -621,3 +622,25 @@ class UserProfileView(APIView):
             return Response({"message": "Profile and account deleted"}, status=status.HTTP_204_NO_CONTENT)
         except UserProfile.DoesNotExist:
             return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class AdminUsersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_superuser:
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        users = User.objects.all().order_by('-date_joined')
+        serializer = AdminUserSerializer(users, many=True)
+        return Response(serializer.data)
+
+class AdminOrdersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_superuser:
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        orders = Order.objects.all().order_by('-created_at')
+        serializer = AdminOrderSerializer(orders, many=True, context={'request': request})
+        return Response(serializer.data)

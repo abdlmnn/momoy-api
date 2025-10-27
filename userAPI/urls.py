@@ -28,4 +28,8 @@ urlpatterns = [
     path("check-verification-status/", CheckVerificationStatus.as_view(), name="check-verification-status"),
 
     path('profile/', UserProfileView.as_view(), name='user-profile'),
+
+    # Admin endpoints
+    path('admin/users/', AdminUsersView.as_view(), name='admin-users'),
+    path('admin/orders/', AdminOrdersView.as_view(), name='admin-orders'),
 ]
