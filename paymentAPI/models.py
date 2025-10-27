@@ -18,6 +18,7 @@ class Payment(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     # proof_image = models.ImageField(upload_to='payments/', blank=True, null=True)  # For GCash proof of payment
     proof_image = CloudinaryField('image', folder='payments/', blank=True, null=True)
+    transaction_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

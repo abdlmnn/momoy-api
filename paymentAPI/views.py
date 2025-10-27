@@ -38,14 +38,17 @@ class PaymentView(APIView):
                 order=order,
                 amount=order.total_amount,
                 method=method,
-                status='completed' if method == 'gcash' else 'pending',
-                proof_image=proof_image if method == 'gcash' else None
+                # status='completed' if method == 'gcash' else 'pending',
+                status='completed' if method in ['gcash', 'stripe'] else 'pending',
+                proof_image=proof_image if method == 'gcash' else None,
+                transaction_id=transaction_id if method == 'stripe' else None
             )
 
             # If COD, immediately mark as confirmed
             if method == 'cod':
                 order.status = 'pending'
                 order.save()
+              
 
         serializer = PaymentSerializer(payment)
         return Response({
