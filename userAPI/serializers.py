@@ -25,11 +25,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source='user.last_name', required=False)
     email = serializers.EmailField(source='user.email', required=False)
     phone = serializers.CharField(source='user.phone', required=False, allow_blank=True)
+    is_superuser = serializers.BooleanField(source='user.is_superuser', read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'is_superuser', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'is_superuser', 'created_at', 'updated_at']
 
     def update(self, instance, validated_data):
         # Handle user fields update

@@ -103,6 +103,7 @@ class GoogleLoginView(APIView):
                 "first_name": first_name,
                 "last_name": last_name,
                 "google_id": google_id,
+                "is_superuser": user.is_superuser,
                 "refresh": str(refresh),
                 "access": str(access),
                 "is_new_user": created,
@@ -169,6 +170,7 @@ class LoginView(APIView):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "phone": user.phone,
+            "is_superuser": user.is_superuser,
             "refresh": str(refresh),
             "access": str(access),
         }, status=status.HTTP_200_OK)
@@ -562,6 +564,7 @@ class VerifyLoginLinkView(APIView):
             "access": str(access),
             "refresh": str(refresh),
             "email": user.email,
+            "is_superuser": user.is_superuser,
         }, status=status.HTTP_200_OK)
 
 class CheckVerificationStatus(APIView):
@@ -585,7 +588,8 @@ class CheckVerificationStatus(APIView):
                 "verified": True,
                 "access": str(access),
                 "refresh": str(refresh),
-                "email": user.email
+                "email": user.email,
+                "is_superuser": user.is_superuser
             })
 
         return Response({"verified": False})
