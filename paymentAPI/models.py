@@ -11,7 +11,6 @@ class Payment(models.Model):
         ('pending', 'Pending'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
-        ('delivery', 'Delivery'),
     ]
     order = models.OneToOneField('orderAPI.Order', related_name='payment', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
