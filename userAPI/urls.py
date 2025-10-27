@@ -26,4 +26,6 @@ urlpatterns = [
     path("verify-login-link/", VerifyLoginLinkView.as_view(), name="verify-login-link"),
 
     path("check-verification-status/", CheckVerificationStatus.as_view(), name="check-verification-status"),
+
+    path('profile/', UserProfileView.as_view(), name='user-profile'),
 ]

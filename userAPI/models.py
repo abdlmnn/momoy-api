@@ -43,3 +43,16 @@ class LoginVerification(models.Model):
     email = models.EmailField(unique=True)
     is_verified = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='profile'
+    )
+    # Profile can include additional fields if needed in the future
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Profile for {self.user.email}"

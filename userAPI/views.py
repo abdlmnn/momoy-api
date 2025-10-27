@@ -17,6 +17,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
 from .serializers import *
+from .models import UserProfile
 
 from django.contrib.auth import authenticate
 
@@ -588,3 +589,31 @@ class CheckVerificationStatus(APIView):
             })
 
         return Response({"verified": False})
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Retrieve the user's profile."""
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Create or update the user's profile."""
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+
+    def delete(self, request):
+        """Delete the user's profile and account."""
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+            user = request.user
+            profile.delete()
+            user.delete()  # Delete the user account as well
+            return Response({"message": "Profile and account deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
