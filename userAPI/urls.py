@@ -31,5 +31,4 @@ urlpatterns = [
 
     # Admin endpoints
     path('admin/users/', AdminUsersView.as_view(), name='admin-users'),
-    path('admin/orders/', AdminOrdersView.as_view(), name='admin-orders'),
 ]

@@ -8,6 +8,7 @@ from .serializers import OrderSerializer
 from cartAPI.models import Cart, CartLine
 from orderlineAPI.models import Orderline
 from django.db import transaction
+from userAPI.serializers import AdminOrderSerializer
 
 class OrderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -74,3 +75,54 @@ class OrderDetailView(APIView):
         )
         serializer = OrderSerializer(order, context={'request': request})
         return Response(serializer.data)
+
+class AdminOrderListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_superuser:
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        orders = Order.objects.all().select_related('payment').prefetch_related('orderlines__inventory').order_by('-created_at')
+        serializer = AdminOrderSerializer(orders, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class AdminOrderDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        if not request.user.is_superuser:
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            order = Order.objects.select_related('payment').prefetch_related('orderlines__inventory').get(pk=pk)
+            serializer = AdminOrderSerializer(order, context={'request': request})
+            return Response(serializer.data)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request, pk):
+        if not request.user.is_superuser:
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({"error": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        valid_statuses = [choice[0] for choice in Order.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return Response({"error": f"Invalid status. Valid options: {', '.join(valid_statuses)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.status = new_status
+        order.save()
+
+        serializer = AdminOrderSerializer(order, context={'request': request})
+        return Response({
+            "message": f"Order status updated to {new_status}",
+            "order": serializer.data
+        })

@@ -18,7 +18,6 @@ from django.core.mail import send_mail
 
 from .serializers import *
 from .models import UserProfile
-from orderAPI.models import Order
 
 from django.contrib.auth import authenticate
 
@@ -634,13 +633,3 @@ class AdminUsersView(APIView):
         serializer = AdminUserSerializer(users, many=True)
         return Response(serializer.data)
 
-class AdminOrdersView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        if not request.user.is_superuser:
-            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
-
-        orders = Order.objects.all().order_by('-created_at')
-        serializer = AdminOrderSerializer(orders, many=True, context={'request': request})
-        return Response(serializer.data)
