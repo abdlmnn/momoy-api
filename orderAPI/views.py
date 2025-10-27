@@ -8,7 +8,7 @@ from .serializers import OrderSerializer
 from cartAPI.models import Cart, CartLine
 from orderlineAPI.models import Orderline
 from django.db import transaction
-from userAPI.serializers import AdminOrderSerializer
+from .serializers import AdminOrderSerializer
 
 class OrderView(APIView):
     permission_classes = [IsAuthenticated]

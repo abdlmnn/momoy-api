@@ -20,3 +20,8 @@ class OrderSerializer(serializers.ModelSerializer):
     #     if hasattr(obj, 'payment'):
     #         return PaymentSerializer(obj.payment, context=self.context).data
     #     return None
+
+class AdminOrderSerializer(OrderSerializer):
+    class Meta:
+        model = Order
+        fields = ['id', 'user_email', 'total_amount', 'status', 'created_at', 'updated_at', 'orderlines', 'payment']
