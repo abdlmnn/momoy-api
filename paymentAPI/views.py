@@ -24,6 +24,7 @@ class PaymentView(APIView):
         order_id = request.data.get('order')
         method = request.data.get('method')
         proof_image = request.FILES.get('proof_image')
+        transaction_id = request.data.get('transaction_id')
 
         # Validate order
         order = get_object_or_404(Order, id=order_id, user=request.user)
