@@ -5,6 +5,7 @@ class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ('cod', 'Cash on Delivery'),
         ('gcash', 'GCash'),
+        ('stripe', 'Stripe'),
     ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),
