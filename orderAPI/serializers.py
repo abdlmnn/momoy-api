@@ -23,11 +23,23 @@ class OrderSerializer(serializers.ModelSerializer):
     #     return None
 
 class AdminOrderSerializer(OrderSerializer):
+    user_details = serializers.SerializerMethodField()
     user_addresses = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'user_email', 'total_amount', 'status', 'created_at', 'updated_at', 'orderlines', 'payment', 'user_addresses']
+        fields = ['id', 'user_details', 'total_amount', 'status', 'created_at', 'updated_at', 'orderlines', 'payment', 'user_addresses']
+
+    def get_user_details(self, obj):
+        return {
+            'id': obj.user.id,
+            'email': obj.user.email,
+            'first_name': obj.user.first_name,
+            'last_name': obj.user.last_name,
+            'phone': obj.user.phone,
+            'is_active': obj.user.is_active,
+            'date_joined': obj.user.date_joined
+        }
 
     def get_user_addresses(self, obj):
         addresses = UserAddress.objects.filter(user=obj.user)
