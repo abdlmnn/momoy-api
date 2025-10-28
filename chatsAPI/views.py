@@ -14,7 +14,19 @@ class ChatView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = ChatSerializer(data=request.data)
+        data = request.data.copy()
+        order_id = data.get('order')
+
+        # Validate order if provided
+        if order_id:
+            try:
+                from orderAPI.models import Order
+                order = Order.objects.get(id=order_id, user=request.user)
+                data['order'] = order.id
+            except Order.DoesNotExist:
+                return Response({"error": "Order not found or doesn't belong to user"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ChatSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

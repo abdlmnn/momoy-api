@@ -3,6 +3,7 @@ from django.conf import settings
 
 class Chat(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    order = models.ForeignKey('orderAPI.Order', on_delete=models.CASCADE, null=True, blank=True)
     message = models.TextField()
     is_from_user = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
