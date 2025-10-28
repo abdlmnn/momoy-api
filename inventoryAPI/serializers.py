@@ -7,11 +7,17 @@ class InventorySerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     image = serializers.SerializerMethodField()
     isNew = serializers.BooleanField(source='is_new', read_only=True)
-    
+
 
     class Meta:
         model = Inventory
         fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew','is_available']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Exclude image field for POST/PUT operations
+        if self.context.get('request') and self.context['request'].method in ['POST', 'PUT', 'PATCH']:
+            self.fields.pop('image', None)
 
     def get_image(self, obj):
         return obj.display_image
