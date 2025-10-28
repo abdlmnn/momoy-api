@@ -200,7 +200,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "userAPI.CustomUser"
 
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8081,http://localhost:19006,exp://localhost:8081").split(",")
+# For development with Expo Go, it's easiest to allow all origins.
+# This avoids "Network Error" issues caused by your phone not being on "localhost".
+CORS_ALLOW_ALL_ORIGINS = True
+
+# The setting below is more secure and should be used for production, but can be tricky for local development.
+# CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8081,http://localhost:19006,exp://localhost:8081").split(",")
 CORS_ALLOW_CREDENTIALS = True
 
 LOGIN_URL = None

@@ -15,7 +15,7 @@ class InventorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Inventory
-        fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew','is_available']
+        fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew']
         # The 'image' field is now handled by ImageField, so we don't need to make it read-only.
         # It will be included in write operations (like POST) and read operations (like GET).
 
