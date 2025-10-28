@@ -4,14 +4,23 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import Inventory
 from .serializers import InventorySerializer
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class InventoryView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
     def get(self, request):
         inventories = Inventory.objects.all()
         serializer = InventorySerializer(inventories, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        # serializer = InventorySerializer(data=request.data)
+        # if serializer.is_valid():
+        #     serializer.save()
+        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = InventorySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
