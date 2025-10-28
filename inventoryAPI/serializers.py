@@ -5,7 +5,7 @@ from cloudinary import utils
 
 class InventorySerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
-    # image = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
     isNew = serializers.BooleanField(source='is_new', read_only=True)
 
 

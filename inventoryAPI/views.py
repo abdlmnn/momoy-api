@@ -7,7 +7,7 @@ from .serializers import InventorySerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 
 class InventoryView(APIView):
-    # parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         inventories = Inventory.objects.all()
@@ -23,7 +23,6 @@ class InventoryView(APIView):
         is_new = request.data.get('is_new', False)
         is_available = request.data.get('is_available', True)
         image = request.FILES.get('image')
-        image_url = request.data.get('image_url')
 
         # Validate required fields
         if not all([product_id, size, price, stock]):
@@ -44,7 +43,6 @@ class InventoryView(APIView):
             is_new=is_new,
             is_available=is_available,
             image=image,
-            image_url=image_url
         )
 
         serializer = InventorySerializer(inventory)
