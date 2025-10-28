@@ -83,7 +83,7 @@ class AdminOrderListView(APIView):
         if not request.user.is_superuser:
             return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
 
-        orders = Order.objects.all().select_related('payment').prefetch_related('orderlines__inventory').order_by('-created_at')
+        orders = Order.objects.all().select_related('payment').prefetch_related('orderlines__inventory__product').order_by('-created_at')
         serializer = AdminOrderSerializer(orders, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -95,7 +95,7 @@ class AdminOrderDetailView(APIView):
             return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            order = Order.objects.select_related('payment').prefetch_related('orderlines__inventory').get(pk=pk)
+            order = Order.objects.select_related('payment').prefetch_related('orderlines__inventory__product').get(pk=pk)
             serializer = AdminOrderSerializer(order, context={'request': request})
             return Response(serializer.data)
         except Order.DoesNotExist:
