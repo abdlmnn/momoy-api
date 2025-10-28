@@ -7,8 +7,10 @@ class Inventory(models.Model):
     size = models.CharField(max_length=50)  # "1KG", "20KG (SACK)"
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
+    # This is the single source of truth for the image.
     image = CloudinaryField('image', folder='products/variants/', blank=True, null=True)
-    image_url = models.URLField(blank=True, null=True)
+    # The image_url field is now redundant because the serializer handles URL generation.
+    # image_url = models.URLField(blank=True, null=True) # This can be removed after migrating data.
     is_new = models.BooleanField(default=False)
     is_available = models.BooleanField(default=True)
 
@@ -17,25 +19,21 @@ class Inventory(models.Model):
 
     @property
     def display_image(self):
-        """
-        Returns a full URL for the image:
-        1. Prefer Cloudinary image
-        2. Fall back to old Cloudinary URL
-        3. For Expo/React Native, ensure full Cloudinary URL
-        """
-        if self.image:
-            # Cloudinary already provides full URLs
+        """Returns the full image URL from the CloudinaryField."""
+        if self.image and hasattr(self.image, 'url'):
             return self.image.url
-        elif self.image_url:
-            # If it's already a full URL, return as-is
-            if self.image_url.startswith('http'):
-                return self.image_url
-            # If it's a relative path, construct full Cloudinary URL
-            cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME')
-            if cloud_name and self.image_url:
-                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.image_url}"
-            return self.image_url
         return None
+
+    # @property
+    # def display_image(self):
+    #     """
+    #     Returns a full URL for the image:
+    #     1. Prefer Cloudinary image
+    #     2. Fall back to old Cloudinary URL
+    #     """
+    #     if self.image:
+    #         return self.image.url
+    #     return self.image_url
 
     # @property
     # def display_image(self):
