@@ -1,17 +1,23 @@
 from rest_framework import serializers
 from .models import Inventory
-import os
-from cloudinary import utils
+# import os
+# from cloudinary import utils
 
 class InventorySerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
+    # Use ImageField to handle both file uploads (write) and URL generation (read).
+    # `use_url=True` ensures that when serializing, it returns the full URL (e.g., from Cloudinary).
+    # `required=False` makes the image optional during creation/updates.
+    image = serializers.ImageField(use_url=True, required=False, allow_null=True)
     isNew = serializers.BooleanField(source='is_new', read_only=True)
 
 
     class Meta:
         model = Inventory
         fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew','is_available']
+        # The 'image' field is now handled by ImageField, so we don't need to make it read-only.
+        # It will be included in write operations (like POST) and read operations (like GET).
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
@@ -67,12 +73,12 @@ class InventorySerializer(serializers.ModelSerializer):
     #         # Cloudinary will handle production URLs automatically
     #         return obj.image.url
     #     return None
-    def get_image(self, obj):
-        """
-        Ensures a full, absolute URL is returned for the image,
-        which is required for mobile clients like Expo.
-        """
-        if obj.image and hasattr(obj.image, 'url'):
-            return obj.image.url
-        # Fallback for legacy data that might be in the `image_url` field
-        return obj.image_url or None
+    # def get_image(self, obj):
+    #     """
+    #     Ensures a full, absolute URL is returned for the image,
+    #     which is required for mobile clients like Expo.
+    #     """
+    #     if obj.image and hasattr(obj.image, 'url'):
+    #         return obj.image.url
+    #     # Fallback for legacy data that might be in the `image_url` field
+    #     return obj.image_url or None
