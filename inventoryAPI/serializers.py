@@ -20,7 +20,7 @@ class InventorySerializer(serializers.ModelSerializer):
     #         self.fields.pop('image', None)
 
     def get_image(self, obj):
-        return obj.display_image
+    #     return obj.display_image
 
     # def get_image(self, obj):
     #     if obj.image:
@@ -67,3 +67,12 @@ class InventorySerializer(serializers.ModelSerializer):
     #         # Cloudinary will handle production URLs automatically
     #         return obj.image.url
     #     return None
+    def get_image(self, obj):
+        """
+        Ensures a full, absolute URL is returned for the image,
+        which is required for mobile clients like Expo.
+        """
+        if obj.image and hasattr(obj.image, 'url'):
+            return obj.image.url
+        # Fallback for legacy data that might be in the `image_url` field
+        return obj.image_url or None
