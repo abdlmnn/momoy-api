@@ -19,7 +19,7 @@ class InventorySerializer(serializers.ModelSerializer):
     #     if self.context.get('request') and self.context['request'].method in ['POST', 'PUT', 'PATCH']:
     #         self.fields.pop('image', None)
 
-    def get_image(self, obj):
+    # def get_image(self, obj):
     #     return obj.display_image
 
     # def get_image(self, obj):
