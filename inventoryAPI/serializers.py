@@ -18,7 +18,6 @@ class InventorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Inventory
         fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew']
-        # read_only_fields = ['image']
         # The 'image' field is now handled by ImageField, so we don't need to make it read-only.
         # It will be included in write operations (like POST) and read operations (like GET).
 
@@ -41,6 +40,13 @@ class InventorySerializer(serializers.ModelSerializer):
                 return f"https://res.cloudinary.com/{cloud_name}/image/upload/{url}"
         return None
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make image field writable for POST/PUT operations
+        if self.context.get('request') and self.context['request'].method in ['POST', 'PUT', 'PATCH']:
+            # Replace SerializerMethodField with ImageField for write operations
+            self.fields['image'] = serializers.ImageField(required=False, allow_null=True)
+            
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
     #     # Exclude image field for POST/PUT operations
