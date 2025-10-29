@@ -11,13 +11,13 @@ class InventorySerializer(serializers.ModelSerializer):
     # `required=False` makes the image optional during creation/updates.
     # image = serializers.ImageField(use_url=True, required=False, allow_null=True)
 
-    image = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
     isNew = serializers.BooleanField(source='is_new', read_only=True)
 
 
     class Meta:
         model = Inventory
-        fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew']
+        fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'image_url', 'isNew']
         # The 'image' field is now handled by ImageField, so we don't need to make it read-only.
         # It will be included in write operations (like POST) and read operations (like GET).
 
@@ -46,7 +46,7 @@ class InventorySerializer(serializers.ModelSerializer):
         if self.context.get('request') and self.context['request'].method in ['POST', 'PUT', 'PATCH']:
             # Replace SerializerMethodField with ImageField for write operations
             self.fields['image'] = serializers.ImageField(required=False, allow_null=True)
-            
+
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
     #     # Exclude image field for POST/PUT operations

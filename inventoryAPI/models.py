@@ -15,7 +15,8 @@ class Inventory(models.Model):
     is_available = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.product.name} - {self.size}"\
+        return f"{self.product.name} - {self.size}"
+
     
     @property
     def image_url(self):
