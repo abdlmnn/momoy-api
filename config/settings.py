@@ -245,27 +245,29 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False  # Set True if you want to test without sending emails
 
-# CLOUDINARY_STORAGE = {
-#     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-#     'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-#     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-# }
-
+# Cloudinary configuration
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-}
+# Use CLOUDINARY_URL if provided (preferred), otherwise fall back to individual variables
+cloudinary_url = os.getenv('CLOUDINARY_CLOUDINARY_URL')
+if cloudinary_url:
+    cloudinary.config(cloudinary_url=cloudinary_url)
+else:
+    cloudinary.config(
+        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.getenv('CLOUDINARY_API_KEY'),
+        api_secret=os.getenv('CLOUDINARY_API_SECRET')
+        # cloudinary_url=os.getenv('CLOUDINARY_CLOUDINARY_URL')
+    )
 
-cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET')
-)
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': cloudinary.config().cloud_name,
+    'API_KEY': cloudinary.config().api_key,
+    'API_SECRET': cloudinary.config().api_secret,
+    # 'CLOUDINARY_URL': cloudinary.config().cloudinary_url
+}
 
 # Use Cloudinary for both development and production
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
