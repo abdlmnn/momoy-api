@@ -20,19 +20,22 @@ class Inventory(models.Model):
     
     @property
     def image_url(self):
-        """Always return full Cloudinary URL"""
+        """Always return full Cloudinary URL optimized for Expo/React Native"""
         if self.image and hasattr(self.image, 'url'):
             url = self.image.url
-            if url.startswith('http'):
-                return url
-            # Construct full URL for development
-            from django.conf import settings
-            cloud_name = getattr(settings, 'CLOUDINARY_STORAGE', {}).get('CLOUD_NAME', 'dlk1dzj2o')
-            if url.startswith('/'):
-                image_path = url.lstrip('/')
-                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{image_path}"
-            else:
-                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{url}"
+            # Ensure HTTPS for production apps
+            if url.startswith('http://'):
+                url = url.replace('http://', 'https://')
+            elif not url.startswith('https://'):
+                # Construct full URL for development/local
+                from django.conf import settings
+                cloud_name = getattr(settings, 'CLOUDINARY_STORAGE', {}).get('CLOUD_NAME', 'dlk1dzj2o')
+                if url.startswith('/'):
+                    image_path = url.lstrip('/')
+                    url = f"https://res.cloudinary.com/{cloud_name}/image/upload/{image_path}"
+                else:
+                    url = f"https://res.cloudinary.com/{cloud_name}/image/upload/{url}"
+            return url
         return None
 
     # @property
