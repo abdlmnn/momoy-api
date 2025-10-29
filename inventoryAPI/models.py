@@ -15,14 +15,31 @@ class Inventory(models.Model):
     is_available = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.product.name} - {self.size}"
-
+        return f"{self.product.name} - {self.size}"\
+    
     @property
-    def display_image(self):
-        """Returns the full image URL from the CloudinaryField."""
+    def image_url(self):
+        """Always return full Cloudinary URL"""
         if self.image and hasattr(self.image, 'url'):
-            return self.image.url
+            url = self.image.url
+            if url.startswith('http'):
+                return url
+            # Construct full URL for development
+            from django.conf import settings
+            cloud_name = getattr(settings, 'CLOUDINARY_STORAGE', {}).get('CLOUD_NAME', 'dlk1dzj2o')
+            if url.startswith('/'):
+                image_path = url.lstrip('/')
+                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{image_path}"
+            else:
+                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{url}"
         return None
+
+    # @property
+    # def display_image(self):
+    #     """Returns the full image URL from the CloudinaryField."""
+    #     if self.image and hasattr(self.image, 'url'):
+    #         return self.image.url
+    #     return None
 
     # @property
     # def display_image(self):

@@ -7,7 +7,7 @@ from .serializers import InventorySerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 
 class InventoryView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    # parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         inventories = Inventory.objects.all()
@@ -25,7 +25,7 @@ class InventoryView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         # If validation fails, the serializer.errors will contain details.
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # """Create inventory item"""
         # product_id = request.data.get('product')
         # size = request.data.get('size')

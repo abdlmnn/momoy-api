@@ -9,15 +9,37 @@ class InventorySerializer(serializers.ModelSerializer):
     # Use ImageField to handle both file uploads (write) and URL generation (read).
     # `use_url=True` ensures that when serializing, it returns the full URL (e.g., from Cloudinary).
     # `required=False` makes the image optional during creation/updates.
-    image = serializers.ImageField(use_url=True, required=False, allow_null=True)
+    # image = serializers.ImageField(use_url=True, required=False, allow_null=True)
+
+    image = serializers.SerializerMethodField()
     isNew = serializers.BooleanField(source='is_new', read_only=True)
 
 
     class Meta:
         model = Inventory
         fields = ['id', 'product', 'product_name', 'size', 'price', 'stock', 'image', 'isNew']
+        # read_only_fields = ['image']
         # The 'image' field is now handled by ImageField, so we don't need to make it read-only.
         # It will be included in write operations (like POST) and read operations (like GET).
+
+    def get_image(self, obj):
+        """Always return full Cloudinary URL"""
+        if obj.image and hasattr(obj.image, 'url'):
+            # CloudinaryField.url should give full URL in production
+            # But let's ensure it for all environments
+            url = obj.image.url
+            if url.startswith('http'):
+                return url
+            # Fallback: construct full URL
+            from django.conf import settings
+            cloud_name = getattr(settings, 'CLOUDINARY_STORAGE', {}).get('CLOUD_NAME', 'dlk1dzj2o')
+            if url.startswith('/'):
+                # Remove leading slash and construct Cloudinary URL
+                image_path = url.lstrip('/')
+                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{image_path}"
+            else:
+                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{url}"
+        return None
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
