@@ -251,7 +251,7 @@ import cloudinary.uploader
 import cloudinary.api
 
 # Use CLOUDINARY_URL if provided (preferred), otherwise fall back to individual variables
-cloudinary_url = os.getenv('CLOUDINARY_CLOUDINARY_URL')
+cloudinary_url = os.getenv('CLOUDINARY_URL')
 if cloudinary_url:
     cloudinary.config(cloudinary_url=cloudinary_url)
 else:
@@ -259,15 +259,17 @@ else:
         cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
         api_key=os.getenv('CLOUDINARY_API_KEY'),
         api_secret=os.getenv('CLOUDINARY_API_SECRET')
-        # cloudinary_url=os.getenv('CLOUDINARY_CLOUDINARY_URL')
     )
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': cloudinary.config().cloud_name,
     'API_KEY': cloudinary.config().api_key,
     'API_SECRET': cloudinary.config().api_secret,
-    # 'CLOUDINARY_URL': cloudinary.config().cloudinary_url
 }
+
+# Stripe configuration
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 
 # Use Cloudinary for both development and production
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
